@@ -41,6 +41,8 @@ const App = {
   state:{
     user:null,
     scores:{},
+    spent: 0,
+    purchases: [],
     settings:{vibrate:true,sound:true,lang:'fa',theme:'dark'},
     screen:'home',
     game:null,
@@ -54,6 +56,8 @@ const App = {
       this.state.settings = {...this.state.settings, ...(s.settings||{})};
       this.state.scores = s.scores||{};
       this.state.user = s.user||null;
+      this.state.spent = s.spent || 0;
+      this.state.purchases = s.purchases || [];
     }catch(e){}
     LANG = this.state.settings.lang || 'fa';
     this.applyTheme(this.state.settings.theme);
