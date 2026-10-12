@@ -50,30 +50,33 @@ const App = {
   },
 
   init(){
-    // load
-    try{
-      const s = JSON.parse(localStorage.getItem('gh_data')||'{}');
-      this.state.settings = {...this.state.settings, ...(s.settings||{})};
-      this.state.scores = s.scores||{};
-      this.state.user = s.user||null;
-      this.state.spent = s.spent || 0;
-      this.state.purchases = s.purchases || [];
-    }catch(e){}
-    LANG = this.state.settings.lang || 'fa';
-    this.applyTheme(this.state.settings.theme);
-    this.applyDir();
+  init(){
+  try{
+    const s = JSON.parse(localStorage.getItem('gh_data')||'{}');
+    this.state.settings = {...this.state.settings, ...(s.settings||{})};
+    this.state.scores = s.scores||{};
+    this.state.user = s.user||null;
+    this.state.spent = s.spent || 0;
+    this.state.purchases = s.purchases || [];
+  }catch(e){}
+  LANG = this.state.settings.lang || 'fa';
+  this.applyTheme(this.state.settings.theme);
+  this.applyDir();
 
-    // bind
-    document.getElementById('gback').onclick = ()=>this.closeGame();
-    document.getElementById('modal').onclick = e=>{ if(e.target.id==='modal') this.closeModal(); };
+  document.getElementById('gback').onclick = ()=>this.closeGame();
+  document.getElementById('modal').onclick = e=>{
+    if(e.target.id==='modal') this.closeModal();
+  };
 
-    // first run?
-    if(!this.state.user){
-      this.showRegister();
-    } else {
-      this.startApp();
-    }
-  },
+  if(!this.state.user){
+    this.showRegister();
+  } else {
+    this.startApp();
+  }
+
+  // 👇 این خط رو اضافه کن
+  Shop.load().then(()=>{ if(this.state.screen==='shop') this.go('shop'); });
+},
 
   startApp(){
     this.renderHeader();
