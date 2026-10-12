@@ -50,7 +50,6 @@ const App = {
   },
 
   init(){
-  init(){
   try{
     const s = JSON.parse(localStorage.getItem('gh_data')||'{}');
     this.state.settings = {...this.state.settings, ...(s.settings||{})};
