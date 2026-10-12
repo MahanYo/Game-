@@ -278,7 +278,7 @@ const App = {
         <div class="hi">${t('welcome_user')} 👋</div>
         <div class="hn">${u.name}</div>
       </div>
-      <div class="hcoin">${I.coin}<span>${total}</span></div>
+      <div class="hcoin" onclick="App.go('shop')">${I.coin}<span>${App.getCoins()}</span></div>
       <div class="hset" onclick="App.go('settings')">${I.gear}</div>`;
   },
   renderNav(){
