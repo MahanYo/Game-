@@ -82,10 +82,14 @@ const App = {
   },
 
   save(){
-    localStorage.setItem('gh_data', JSON.stringify({
-      user:this.state.user, scores:this.state.scores, settings:this.state.settings
-    }));
-  },
+  localStorage.setItem('gh_data', JSON.stringify({
+    user:this.state.user,
+    scores:this.state.scores,
+    settings:this.state.settings,
+    spent:this.state.spent || 0,
+    purchases:this.state.purchases || []
+  }));
+},
 
   applyTheme(theme){
     document.documentElement.setAttribute('data-theme', theme);
@@ -292,15 +296,23 @@ const App = {
 
   /* ===== Router ===== */
   go(screen){
-    this.state.screen = screen;
-    this.renderHeader(); this.renderNav();
-    const m = document.getElementById('main');
-    m.classList.remove('fade'); void m.offsetWidth; m.classList.add('fade');
-    m.scrollTop = 0;
-    const views = {home:()=>this.viewHome(), games:()=>this.viewGames(), profile:()=>this.viewProfile(), rank:()=>this.viewRank(), settings:()=>Settings.render()};
-    m.innerHTML = views[screen] ? views[screen]() : '';
-    if(screen==='settings') Settings.bind();
-  },
+  this.state.screen = screen;
+  this.renderHeader(); this.renderNav();
+  const m = document.getElementById('main');
+  m.classList.remove('fade'); void m.offsetWidth; m.classList.add('fade');
+  m.scrollTop = 0;
+  const views = {
+    home:()=>this.viewHome(),
+    games:()=>this.viewGames(),
+    profile:()=>this.viewProfile(),
+    rank:()=>this.viewRank(),
+    settings:()=>Settings.render(),
+    shop:()=>Shop.render()
+  };
+  m.innerHTML = views[screen] ? views[screen]() : '';
+  if(screen==='settings') Settings.bind();
+  if(screen==='shop') Shop.bind();
+},
 
   /* ===== Views ===== */
   viewHome(){
@@ -383,6 +395,11 @@ const App = {
     if(val>cur){ this.state.scores[gid]=val; this.save(); return true; }
     return false;
   },
+  getCoins(){
+  const earned = Object.values(this.state.scores).reduce((a,b)=>a+b,0);
+  const spent = this.state.spent || 0;
+  return Math.max(0, earned - spent);
+},
   startGame(id){
     this.haptic('medium');
     this.state.game = id;
