@@ -335,4 +335,121 @@ body{overscroll-behavior:none;user-select:none;-webkit-user-select:none}
 
 .fade{animation:fade .3s}
 @keyframes fade{from{opacity:0;transform:translateY(8px)}}
+
+/* ============ SHOP ============ */
+.shop-hero{position:relative;border-radius:22px;padding:22px 20px;margin-bottom:18px;overflow:hidden;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--a1) 30%,transparent),color-mix(in srgb,var(--a2) 25%,transparent));
+  border:1px solid color-mix(in srgb,var(--a1) 35%,transparent)}
+.shop-hero-bg{position:absolute;top:-50px;right:-30px;width:200px;height:200px;
+  background:radial-gradient(circle,color-mix(in srgb,var(--gold) 40%,transparent),transparent 70%);filter:blur(30px)}
+.shop-hero-in{display:flex;align-items:center;gap:14px;position:relative}
+.shop-ic{width:56px;height:56px;border-radius:18px;background:linear-gradient(135deg,var(--gold),#f59e0b);
+  display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;
+  box-shadow:0 12px 30px -10px var(--gold);animation:coinFloat 3s ease-in-out infinite}
+@keyframes coinFloat{50%{transform:translateY(-6px) rotate(8deg)}}
+.shop-ic svg{width:30px;height:30px}
+.shop-lbl{font-size:11px;color:var(--mut);font-weight:600;margin-bottom:2px}
+.shop-bal{font-size:24px;font-weight:800;background:linear-gradient(135deg,var(--tx),var(--gold));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.shop-bal small{font-size:12px;color:var(--mut);-webkit-text-fill-color:var(--mut)}
+.shop-hist-btn{margin-right:auto;width:42px;height:42px;border-radius:13px;background:color-mix(in srgb,var(--card) 70%,transparent);
+  border:1px solid var(--line);color:var(--tx);display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:.2s}
+.shop-hist-btn:active{transform:scale(.9);border-color:var(--a1)}
+.shop-hist-btn svg{width:20px;height:20px}
+
+/* Categories */
+.shop-cats{display:flex;gap:8px;overflow-x:auto;padding-bottom:10px;margin-bottom:14px;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.shop-cats::-webkit-scrollbar{display:none}
+.shop-cat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 16px;
+  font-size:12px;font-weight:700;color:var(--mut);cursor:pointer;transition:.2s;white-space:nowrap;
+  font-family:inherit;flex-shrink:0}
+.shop-cat:active{transform:scale(.95)}
+.shop-cat.on{background:var(--cc,var(--a1));border-color:var(--cc,var(--a1));color:#fff;
+  box-shadow:0 8px 20px -8px var(--cc,var(--a1))}
+
+/* Product grid */
+.shop-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.shop-card{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;
+  cursor:pointer;transition:.2s;position:relative;display:flex;flex-direction:column}
+.shop-card:active{transform:scale(.97);border-color:var(--a1)}
+.shop-card.disabled{opacity:.5}
+.shop-badge{position:absolute;top:8px;right:8px;background:linear-gradient(135deg,#ef4444,#ec4899);
+  color:#fff;font-size:9px;font-weight:800;padding:4px 9px;border-radius:8px;z-index:2;
+  box-shadow:0 4px 12px rgba(236,72,153,.4)}
+.shop-img{aspect-ratio:1;background:var(--card2);display:flex;align-items:center;justify-content:center;
+  overflow:hidden;position:relative}
+.shop-img img{width:100%;height:100%;object-fit:cover;transition:.3s}
+.shop-card:active .shop-img img{transform:scale(1.05)}
+.shop-img svg{width:40px;height:40px;color:var(--mut)}
+.shop-body{padding:10px 12px 12px;display:flex;flex-direction:column;gap:8px;flex:1}
+.shop-name{font-size:12px;font-weight:700;line-height:1.4;min-height:34px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.shop-foot{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-top:auto}
+.shop-price{display:flex;align-items:center;gap:4px;font-size:13px;font-weight:800;color:var(--gold)}
+.shop-price.no{color:var(--no);opacity:.7}
+.shop-price svg{width:14px;height:14px}
+.shop-stock{font-size:9px;font-weight:700;color:var(--ok);background:color-mix(in srgb,var(--ok) 15%,transparent);
+  padding:3px 7px;border-radius:6px}
+.shop-stock.no{color:var(--no);background:color-mix(in srgb,var(--no) 15%,transparent)}
+
+/* Product detail */
+.pd-img{width:140px;height:140px;margin:0 auto 14px;border-radius:20px;overflow:hidden;background:var(--card2);
+  display:flex;align-items:center;justify-content:center}
+.pd-img img{width:100%;height:100%;object-fit:cover}
+.pd-img svg{width:52px;height:52px;color:var(--mut)}
+.pd-title{font-size:18px;margin-bottom:8px}
+.pd-desc{font-size:12px;color:var(--mut);line-height:1.7;margin-bottom:14px}
+.pd-info{display:flex;justify-content:center;align-items:center;gap:12px;margin-bottom:12px}
+.pd-price{display:flex;align-items:center;gap:6px;font-size:18px;font-weight:800;color:var(--gold);
+  background:color-mix(in srgb,var(--gold) 15%,transparent);padding:6px 12px;border-radius:12px}
+.pd-price svg{width:18px;height:18px}
+.pd-price small{font-size:11px;color:var(--mut);font-weight:600}
+.pd-stock{font-size:11px;font-weight:700;color:var(--ok);background:color-mix(in srgb,var(--ok) 15%,transparent);
+  padding:6px 12px;border-radius:12px}
+.pd-stock.no{color:var(--no);background:color-mix(in srgb,var(--no) 15%,transparent)}
+.pd-balance{display:flex;justify-content:space-between;background:var(--card2);border:1px solid var(--line);
+  border-radius:12px;padding:10px 14px;font-size:12px;color:var(--mut)}
+.pd-balance b{color:var(--gold);font-size:14px}
+
+/* Code box */
+.code-box{background:linear-gradient(135deg,color-mix(in srgb,var(--ok) 15%,transparent),color-mix(in srgb,var(--a1) 15%,transparent));
+  border:2px dashed color-mix(in srgb,var(--ok) 40%,transparent);border-radius:16px;padding:16px;margin:14px 0;position:relative}
+.code-label{font-size:11px;color:var(--mut);font-weight:700;margin-bottom:8px}
+.code-val{font-family:'Courier New',monospace;font-size:20px;font-weight:800;letter-spacing:2px;
+  color:var(--tx);background:var(--card);padding:10px 14px;border-radius:10px;
+  border:1px solid var(--line);direction:ltr;word-break:break-all;margin-bottom:10px}
+.code-copy{background:var(--grad);border:0;color:#fff;padding:9px 16px;border-radius:10px;
+  font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;
+  display:inline-flex;align-items:center;gap:6px;transition:.15s}
+.code-copy:active{transform:scale(.95)}
+.code-copy svg{width:14px;height:14px}
+.code-note{font-size:11px;color:var(--mut);line-height:1.7;background:var(--card2);border-radius:12px;padding:12px;
+  border:1px solid var(--line)}
+.code-admin{display:block;margin-top:6px;font-size:14px;font-weight:800;color:var(--a1);
+  font-family:'Courier New',monospace;direction:ltr;text-align:center;padding:8px;
+  background:var(--card);border-radius:8px}
+.success-anim{animation:successPop .5s cubic-bezier(.34,1.56,.64,1)}
+@keyframes successPop{0%{transform:scale(0) rotate(-180deg)}100%{transform:scale(1) rotate(0)}}
+
+/* History */
+.hist-list{max-height:50vh;overflow-y:auto;margin:12px 0;display:flex;flex-direction:column;gap:8px}
+.hist-list::-webkit-scrollbar{display:none}
+.hist-item{display:flex;align-items:center;gap:10px;background:var(--card2);border:1px solid var(--line);
+  border-radius:14px;padding:10px;text-align:right}
+.hist-img{width:44px;height:44px;border-radius:11px;background:var(--card);overflow:hidden;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center}
+.hist-img img{width:100%;height:100%;object-fit:cover}
+.hist-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.hist-info b{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist-code{font-family:'Courier New',monospace;font-size:10px;color:var(--gold);font-weight:700;direction:ltr}
+.hist-date{font-size:9px;color:var(--mut)}
+.hist-status{font-size:9px;font-weight:700;padding:4px 8px;border-radius:8px;flex-shrink:0}
+.hist-status.pending{background:color-mix(in srgb,var(--gold) 20%,transparent);color:var(--gold)}
+.hist-status.done{background:color-mix(in srgb,var(--ok) 20%,transparent);color:var(--ok)}
+
+/* Make header coin clickable */
+.hcoin{cursor:pointer;transition:.15s}
+.hcoin:active{transform:scale(.92);border-color:var(--gold)}
 </style>
