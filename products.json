@@ -1,0 +1,126 @@
+{
+  "admin_username": "@YourAdminUsername",
+  "admin_note_fa": "برای دریافت محصول، کد خرید را اسکرین‌شات کرده و برای ادمین ارسال کنید.",
+  "admin_note_en": "To receive your product, screenshot the purchase code and send it to the admin.",
+  "categories": [
+    { "id": "all", "name": { "fa": "همه", "en": "All" }, "color": "#6366f1" },
+    { "id": "gifts", "name": { "fa": "گیفت تلگرام", "en": "Telegram Gifts" }, "color": "#ec4899" },
+    { "id": "stars", "name": { "fa": "استارز", "en": "Stars" }, "color": "#f59e0b" },
+    { "id": "premium", "name": { "fa": "پرمیوم", "en": "Premium" }, "color": "#8b5cf6" },
+    { "id": "stickers", "name": { "fa": "استیکر", "en": "Stickers" }, "color": "#10b981" }
+  ],
+  "products": [
+    {
+      "id": "gift_heart",
+      "category": "gifts",
+      "name": { "fa": "گیفت قلب", "en": "Heart Gift" },
+      "desc": { "fa": "یک گیفت قلب زیبا برای چت تلگرام", "en": "A beautiful heart gift for Telegram chats" },
+      "image": "https://placehold.co/400x400/ec4899/fff?text=Heart",
+      "price": 150,
+      "stock": 50,
+      "badge": { "fa": "محبوب", "en": "Hot" }
+    },
+    {
+      "id": "gift_bear",
+      "category": "gifts",
+      "name": { "fa": "گیفت خرس", "en": "Bear Gift" },
+      "desc": { "fa": "گیفت خرس ناز و بامزه", "en": "A cute bear gift" },
+      "image": "https://placehold.co/400x400/8b5cf6/fff?text=Bear",
+      "price": 250,
+      "stock": null
+    },
+    {
+      "id": "gift_rose",
+      "category": "gifts",
+      "name": { "fa": "گیفت گل رز", "en": "Rose Gift" },
+      "desc": { "fa": "یک شاخه گل رز سرخ", "en": "A red rose" },
+      "image": "https://placehold.co/400x400/ef4444/fff?text=Rose",
+      "price": 300,
+      "stock": 20,
+      "badge": { "fa": "محدود", "en": "Limited" }
+    },
+    {
+      "id": "gift_cake",
+      "category": "gifts",
+      "name": { "fa": "گیفت کیک", "en": "Cake Gift" },
+      "desc": { "fa": "کیک تولد تلگرامی", "en": "Telegram birthday cake" },
+      "image": "https://placehold.co/400x400/f59e0b/fff?text=Cake",
+      "price": 200,
+      "stock": null
+    },
+    {
+      "id": "stars_50",
+      "category": "stars",
+      "name": { "fa": "۵۰ استارز", "en": "50 Stars" },
+      "desc": { "fa": "بسته ۵۰ استارز تلگرام", "en": "50 Telegram stars pack" },
+      "image": "https://placehold.co/400x400/fbbf24/000?text=50+Stars",
+      "price": 500,
+      "stock": null
+    },
+    {
+      "id": "stars_100",
+      "category": "stars",
+      "name": { "fa": "۱۰۰ استارز", "en": "100 Stars" },
+      "desc": { "fa": "بسته ۱۰۰ استارز با تخفیف ویژه", "en": "100 stars pack with special discount" },
+      "image": "https://placehold.co/400x400/f59e0b/fff?text=100+Stars",
+      "price": 900,
+      "stock": null,
+      "badge": { "fa": "تخفیف", "en": "Sale" }
+    },
+    {
+      "id": "stars_500",
+      "category": "stars",
+      "name": { "fa": "۵۰۰ استارز", "en": "500 Stars" },
+      "desc": { "fa": "بسته ۵۰۰ استارز اقتصادی", "en": "500 stars economy pack" },
+      "image": "https://placehold.co/400x400/f97316/fff?text=500+Stars",
+      "price": 4000,
+      "stock": null
+    },
+    {
+      "id": "premium_1m",
+      "category": "premium",
+      "name": { "fa": "پرمیوم ۱ ماهه", "en": "Premium 1 Month" },
+      "desc": { "fa": "اشتراک یک ماهه تلگرام پرمیوم", "en": "1 month Telegram Premium" },
+      "image": "https://placehold.co/400x400/8b5cf6/fff?text=1M",
+      "price": 1500,
+      "stock": 10
+    },
+    {
+      "id": "premium_3m",
+      "category": "premium",
+      "name": { "fa": "پرمیوم ۳ ماهه", "en": "Premium 3 Months" },
+      "desc": { "fa": "اشتراک سه ماهه با قیمت بهتر", "en": "3 months subscription at better price" },
+      "image": "https://placehold.co/400x400/a855f7/fff?text=3M",
+      "price": 4000,
+      "stock": 5,
+      "badge": { "fa": "پیشنهاد ویژه", "en": "Best Deal" }
+    },
+    {
+      "id": "premium_1y",
+      "category": "premium",
+      "name": { "fa": "پرمیوم ۱ ساله", "en": "Premium 1 Year" },
+      "desc": { "fa": "اشتراک یک ساله - بهترین ارزش", "en": "1 year subscription - best value" },
+      "image": "https://placehold.co/400x400/6366f1/fff?text=1Y",
+      "price": 14000,
+      "stock": 3
+    },
+    {
+      "id": "sticker_pack_1",
+      "category": "stickers",
+      "name": { "fa": "پک استیکر خنده", "en": "Laugh Stickers Pack" },
+      "desc": { "fa": "پک ۵۰ استیکر خنده‌دار", "en": "Pack of 50 funny stickers" },
+      "image": "https://placehold.co/400x400/10b981/fff?text=Stickers",
+      "price": 80,
+      "stock": null
+    },
+    {
+      "id": "sticker_pack_2",
+      "category": "stickers",
+      "name": { "fa": "پک استیکر عشق", "en": "Love Stickers Pack" },
+      "desc": { "fa": "پک استیکرهای عاشقانه", "en": "Pack of romantic stickers" },
+      "image": "https://placehold.co/400x400/ec4899/fff?text=Love",
+      "price": 80,
+      "stock": null
+    }
+  ]
+}
