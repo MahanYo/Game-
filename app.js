@@ -406,6 +406,131 @@ const App = {
     <div class="games" style="margin-top:12px">${GAMES.filter(g=>!g.online).slice(4).map(g=>this.gameCard(g)).join('')}</div>
   `;
 },
+
+  /* ===== Show create room ===== */
+showCreateRoom(){
+  App.haptic();
+  const onlineGames = GAMES.filter(g => g.online);
+
+  document.getElementById('mbox').innerHTML = `
+    <div class="mico">${I.game}</div>
+    <h3>ساخت اتاق جدید</h3>
+    <p>بازی مورد نظرت رو انتخاب کن</p>
+    <div class="modal-game-grid">
+      ${onlineGames.map(g => `
+        <div class="modal-game-card" data-g="${g.id}" style="--gc:${g.color}">
+          <div class="mgc-icon">${g.icon}</div>
+          <div class="mgc-name">${t(g.nameKey)}</div>
+        </div>
+      `).join('')}
+    </div>
+    <div class="privacy-toggle">
+      <button class="privacy-btn on" data-private="false">🌐 عمومی</button>
+      <button class="privacy-btn" data-private="true">🔒 خصوصی</button>
+    </div>
+    <button class="btn" id="createRoomConfirm" disabled>ساخت اتاق</button>
+  `;
+  document.getElementById('modal').classList.add('open');
+
+  let selectedGame = null;
+  let isPrivate = false;
+
+  document.querySelectorAll('.modal-game-card').forEach(el => {
+    el.onclick = () => {
+      document.querySelectorAll('.modal-game-card').forEach(x => x.classList.remove('on'));
+      el.classList.add('on');
+      selectedGame = el.dataset.g;
+      document.getElementById('createRoomConfirm').disabled = false;
+      App.haptic();
+    };
+  });
+  document.querySelectorAll('.privacy-btn').forEach(el => {
+    el.onclick = () => {
+      document.querySelectorAll('.privacy-btn').forEach(x => x.classList.remove('on'));
+      el.classList.add('on');
+      isPrivate = el.dataset.private === 'true';
+      App.haptic();
+    };
+  });
+  document.getElementById('createRoomConfirm').onclick = () => {
+    if(!selectedGame) return;
+    App.closeModal();
+    Online.createRoom(selectedGame, isPrivate);
+  };
+},
+
+/* ===== Show join room ===== */
+showJoinRoom(){
+  App.haptic();
+  document.getElementById('mbox').innerHTML = `
+    <div class="mico" style="background:linear-gradient(135deg,#10b981,#059669)">${I.user}</div>
+    <h3>ورود به اتاق</h3>
+    <p>کد ۶ حرفی اتاق رو وارد کن</p>
+    <div class="code-input-wrap">
+      <input type="text" id="roomCodeInput" maxlength="6" placeholder="------">
+    </div>
+    <div class="mbtns" style="margin-top:16px">
+      <button class="btn ghost" onclick="App.closeModal()">انصراف</button>
+      <button class="btn" id="joinRoomConfirm">ورود</button>
+    </div>
+  `;
+  document.getElementById('modal').classList.add('open');
+  const input = document.getElementById('roomCodeInput');
+  setTimeout(() => input.focus(), 100);
+  input.oninput = (e) => e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  input.onkeydown = (e) => {
+    if(e.key === 'Enter' && input.value.length === 6){
+      App.closeModal();
+      Online.joinRoom(input.value);
+    }
+  };
+  document.getElementById('joinRoomConfirm').onclick = () => {
+    const code = input.value.trim();
+    if(code.length !== 6){ App.toast('کد باید ۶ حرف باشه'); return; }
+    App.closeModal();
+    Online.joinRoom(code);
+  };
+},
+
+/* ===== Load public rooms ===== */
+async loadPublicRooms(){
+  const container = document.getElementById('publicRooms');
+  if(!container) return;
+  const rooms = await API.getPublicRooms();
+  if(!rooms.length){
+    container.innerHTML = `
+      <div class="rooms-empty">
+        <div>اتاق عمومی فعالی نیست</div>
+        <span>اولین نفری باش که اتاق می‌سازه!</span>
+      </div>
+    `;
+    return;
+  }
+  container.innerHTML = rooms.map(room => {
+    const g = GMAP[room.game_type];
+    if(!g) return '';
+    const isFull = room.current_players >= room.max_players;
+    return `
+      <div class="public-room-card" onclick="Online.joinPublicRoom('${room.id}')">
+        <div class="prc-icon" style="--gc:${g.color}">${g.icon}</div>
+        <div class="prc-info">
+          <b>${t(g.nameKey)}</b>
+          <div class="prc-host">
+            <div class="prc-avatar">${Online.avatarHTML(room.host_avatar, room.host_name)}</div>
+            <span>${room.host_name}</span>
+          </div>
+        </div>
+        <div class="prc-status">
+          <div class="prc-players">${room.current_players}/${room.max_players}</div>
+          <div class="prc-badge ${isFull ? 'full' : room.status === 'playing' ? 'playing' : 'waiting'}">
+            ${isFull ? 'پر' : room.status === 'playing' ? 'در حال بازی' : 'آماده'}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+},
+  
   viewGames(){
     return `<div class="sect-title">${I.game} ${t('all_games')}</div>
       <div class="games">${GAMES.map(g=>this.gameCard(g)).join('')}</div>`;
