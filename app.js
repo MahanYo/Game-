@@ -34,11 +34,13 @@ const GAMES = [
   {id:'react', icon:I.zap, color:'#06b6d4', nameKey:'react', descKey:'react_d', unitKey:'react_u'},
   {id:'whack', icon:I.target, color:'#ef4444', nameKey:'whack', descKey:'whack_d', unitKey:'whack_u'},
   {id:'snake', icon:I.snake, color:'#10b981', nameKey:'snake', descKey:'snake_d', unitKey:'snake_u'},
-  {id:'ttt', icon:I.xo, color:'#f59e0b', nameKey:'ttt', descKey:'ttt_d', unitKey:'ttt_u'},
+  {id:'ttt', icon:I.xo, color:'#f59e0b', nameKey:'ttt', descKey:'ttt_d', unitKey:'ttt_u', online:true},
   {id:'simon', icon:I.grid, color:'#ec4899', nameKey:'simon', descKey:'simon_d', unitKey:'simon_u'},
   {id:'math', icon:I.zap, color:'#8b5cf6', nameKey:'math', descKey:'math_d', unitKey:'math_u'},
   {id:'color', icon:I.target, color:'#06b6d4', nameKey:'color', descKey:'color_d', unitKey:'color_u'},
-  {id:'puzzle', icon:I.grid, color:'#f97316', nameKey:'puzzle', descKey:'puzzle_d', unitKey:'puzzle_u'}
+  {id:'puzzle', icon:I.grid, color:'#f97316', nameKey:'puzzle', descKey:'puzzle_d', unitKey:'puzzle_u'},
+  {id:'hafto4', icon:I.medal, color:'#10b981', nameKey:'hafto4', descKey:'hafto4_d', unitKey:'hafto4_u', online:true},
+  {id:'chess', icon:I.trophy, color:'#8b5cf6', nameKey:'chess', descKey:'chess_d', unitKey:'chess_u', online:true}
 ];
 const GMAP = Object.fromEntries(GAMES.map(g=>[g.id,g]));
 
