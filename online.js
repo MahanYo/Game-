@@ -1,5 +1,5 @@
 /* ============================================================
-   ONLINE SYSTEM — Auto-sync version
+   ONLINE SYSTEM — Auto-sync version (FIXED)
    ============================================================ */
 const Online = {
   currentRoom: null,
@@ -10,7 +10,8 @@ const Online = {
   _pollTimer: null,
   _roomSub: null,
   _heartbeat: null,
-  _gameRunning: false,   // 👈 فلگ جدید
+  _gameRunning: false,
+  _broadcastHandlers: {},   // 👈 map of event → [callbacks]
 
   /* ===== Generate room code ===== */
   genCode(){
@@ -103,7 +104,7 @@ const Online = {
 
     const u = App.state.user;
 
-    // اگه خودم میزبانم
+    // خودم میزبانم
     if(room.host_id === u.username){
       this.currentRoom = room;
       this.isHost = true;
@@ -113,7 +114,7 @@ const Online = {
       return;
     }
 
-    // اگه قبلاً مهمان این اتاق بودم (رفرش)
+    // قبلاً مهمان بودم (رفرش)
     if(room.guest_id === u.username){
       this.currentRoom = room;
       this.isHost = false;
@@ -123,7 +124,6 @@ const Online = {
       return;
     }
 
-    // اگه اتاق پره
     if(room.status === 'playing'){ App.toast('این اتاق پر است'); return; }
 
     await API.updateRoom(room.id, {
@@ -158,11 +158,10 @@ const Online = {
   enterLobby(room){
     App.haptic('success');
     this.currentRoom = room;
-    this._gameRunning = false;   // 👈 ریست فلگ
+    this._gameRunning = false;
+    this._broadcastHandlers = {};   // 👈 ریست handlerها
 
-    // پاک کردن کانال قبلی
     this.cleanup();
-
     this.renderLobby(room);
     this.connectPresence(room.room_code);
     this.watchRoomChanges(room.id);
@@ -178,7 +177,6 @@ const Online = {
 
   /* ===== Render lobby ===== */
   renderLobby(room){
-    // 👈 اگه بازی در جریانه، لابی رو نشون نده
     if(this._gameRunning) return;
     if(!room) return;
 
@@ -187,7 +185,6 @@ const Online = {
     const u = App.state.user;
     const isHost = room.host_id === u.username;
 
-    // مخفی کردن بقیه صفحه‌ها
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
 
     let lobby = document.getElementById('lobbyScreen');
@@ -199,7 +196,6 @@ const Online = {
     }
     lobby.classList.add('on');
 
-    // اطلاعات مهمان
     const guest = room.guest_id ? {
       name: room.guest_name,
       avatar: room.guest_avatar
@@ -260,7 +256,7 @@ const Online = {
     } else {
       btn.onclick = () => {
         App.haptic('success');
-        this.channel?.send({ type: 'broadcast', event: 'ready', payload: { username: u.username }});
+        this.send('ready', { username: u.username });
         App.toast('آماده‌ای! منتظر شروع باش...');
         btn.textContent = '✓ آماده';
         btn.disabled = true;
@@ -268,7 +264,7 @@ const Online = {
     }
   },
 
-  /* ===== Watch room changes (Realtime روی جدول rooms) ===== */
+  /* ===== Watch room changes ===== */
   watchRoomChanges(roomId){
     this._roomSub = sb.channel('room-watch:' + roomId + ':' + Date.now())
       .on('postgres_changes', {
@@ -279,7 +275,6 @@ const Online = {
       }, (payload) => {
         const updated = payload.new;
         this.currentRoom = { ...this.currentRoom, ...updated };
-        // 👈 فقط اگه بازی در جریان نیست رندر کن
         if(!this._gameRunning){
           this.renderLobby(this.currentRoom);
         }
@@ -293,28 +288,21 @@ const Online = {
         table: 'rooms',
         filter: `id=eq.${roomId}`
       }, () => {
-        if(this._gameRunning){
-          // اتاق حذف شد ولی بازی در جریانه — بازیکن رو بیرون ببر
-          App.toast('اتاق بسته شد');
-          this.leaveRoom();
-        } else {
-          App.toast('اتاق بسته شد');
-          this.leaveRoom();
-        }
+        App.toast('اتاق بسته شد');
+        this.leaveRoom();
       })
       .subscribe();
   },
 
-  /* ===== Presence + Broadcast ===== */
+  /* ===== Presence + Broadcast (FIXED) ===== */
   async connectPresence(roomCode){
-    // پاک کردن کانال قبلی
     if(this.channel){
       try{ await sb.removeChannel(this.channel); }catch(e){}
       this.channel = null;
     }
 
     const u = App.state.user;
-    const channelName = `room:${roomCode}`;   // 👈 یکسان برای هر دو
+    const channelName = `room:${roomCode}`;
 
     this.channel = sb.channel(channelName, {
       config: {
@@ -323,6 +311,7 @@ const Online = {
       }
     });
 
+    // 👇 Presence listeners
     this.channel
       .on('presence', { event: 'sync' }, () => {
         const state = this.channel.presenceState();
@@ -343,9 +332,18 @@ const Online = {
         const state = this.channel.presenceState();
         this.players = Object.values(state).flat();
         this.updateLobbyFromPresence();
-      })
-      .on('broadcast', { event: 'ready' }, () => {
-        if(this.isHost && !this._gameRunning){
+      });
+
+    // 👇 تمام broadcast listenerها را از پیش ثبت میکنیم
+    //    (چون در Supabase بعد از subscribe نمیتوان listener اضافه کرد)
+    const ALL_EVENTS = ['ready', 'game_start', 'ttt_move', 'h4_state', 'h4_play', 'h4_end'];
+    ALL_EVENTS.forEach(evt => {
+      this.channel.on('broadcast', { event: evt }, (payload) => {
+        // پیامهای خودم را نادیده بگیر
+        if(payload.payload.sender === App.state.user.username) return;
+
+        // رفتار داخلی برای ready و game_start
+        if(evt === 'ready' && this.isHost && !this._gameRunning){
           const btn = document.getElementById('lobbyActionBtn');
           if(btn){
             btn.disabled = false;
@@ -354,28 +352,33 @@ const Online = {
           }
           App.haptic('success');
         }
-      })
-      .on('broadcast', { event: 'game_start' }, () => {
-        // 👈 فقط اگه بازی شروع نشده باشه
-        if(!this._gameRunning){
+        if(evt === 'game_start' && !this._gameRunning){
           this.launchGame();
         }
-      })
-      .subscribe(async (status) => {
-        if(status === 'SUBSCRIBED'){
-          await this.channel.track({
-            username: u.username,
-            name: u.name,
-            avatar: u.avatar,
-            joinedAt: Date.now()
-          });
-        }
+
+        // فراخوانی callbackهای ثبتشده کاربر
+        const handlers = this._broadcastHandlers[evt] || [];
+        handlers.forEach(cb => {
+          try { cb(payload.payload); } catch(e){ console.error('Handler error:', evt, e); }
+        });
       });
+    });
+
+    // 👇 حالا subscribe میکنیم
+    this.channel.subscribe(async (status) => {
+      if(status === 'SUBSCRIBED'){
+        await this.channel.track({
+          username: u.username,
+          name: u.name,
+          avatar: u.avatar,
+          joinedAt: Date.now()
+        });
+      }
+    });
   },
 
   /* ===== Update lobby from presence ===== */
   updateLobbyFromPresence(){
-    // 👈 اگه بازی در جریانه، کاری نکن
     if(this._gameRunning) return;
     if(!this.currentRoom) return;
 
@@ -388,7 +391,6 @@ const Online = {
       p.username !== host
     );
 
-    // اگه هنوز توی DB مهمان نیست ولی توی presence هست، دستی اضافه کن
     if(otherPlayer && !this.currentRoom.guest_id){
       this.currentRoom.guest_id = otherPlayer.username;
       this.currentRoom.guest_name = otherPlayer.name;
@@ -396,11 +398,7 @@ const Online = {
       this.renderLobby(this.currentRoom);
     }
 
-    // اگه مهمان از presence رفته ولی توی DB هست
-    if(!otherPlayer && this.currentRoom.guest_id && !this.isHost){
-      // مهمان (خودم) رفت، نادیده بگیر
-    } else if(!otherPlayer && this.currentRoom.guest_id && this.isHost){
-      // حریف خارج شد
+    if(!otherPlayer && this.currentRoom.guest_id && this.isHost){
       this.currentRoom.guest_id = null;
       this.currentRoom.guest_name = null;
       this.currentRoom.guest_avatar = null;
@@ -410,16 +408,16 @@ const Online = {
 
   /* ===== Start game (host) ===== */
   startGame(){
-    if(this._gameRunning) return;   // 👈 جلوگیری از شروع دوباره
+    if(this._gameRunning) return;
     App.haptic('success');
-    this.channel?.send({ type: 'broadcast', event: 'game_start', payload: {} });
+    this.send('game_start', {});
     this.launchGame();
   },
 
   /* ===== Launch game ===== */
   launchGame(){
-    if(this._gameRunning) return;   // 👈 جلوگیری از رفرش دوباره
-    this._gameRunning = true;       // 👈 فعال کردن فلگ
+    if(this._gameRunning) return;
+    this._gameRunning = true;
 
     const lobby = document.getElementById('lobbyScreen');
     if(lobby) lobby.classList.remove('on');
@@ -431,7 +429,6 @@ const Online = {
     document.getElementById('gbody').innerHTML = '';
     document.getElementById('gview').classList.add('open');
 
-    // مطمئن شو کانال آماده‌ست
     setTimeout(() => {
       const onlineGames = {
         hafto4: Games.hafto4Online,
@@ -443,7 +440,7 @@ const Online = {
     }, 500);
   },
 
-  /* ===== Send / Listen ===== */
+  /* ===== Send ===== */
   send(event, data){
     if(!this.channel) return;
     this.channel.send({ 
@@ -452,18 +449,19 @@ const Online = {
       payload: { ...data, sender: App.state.user.username } 
     });
   },
+
+  /* ===== Register listener (فقط توی map ذخیره میشه) ===== */
   on(event, cb){
-    if(!this.channel) return;
-    this.channel.on('broadcast', { event }, (payload) => {
-      if(payload.payload.sender === App.state.user.username) return;
-      cb(payload.payload);
-    });
+    if(!this._broadcastHandlers) this._broadcastHandlers = {};
+    if(!this._broadcastHandlers[event]) this._broadcastHandlers[event] = [];
+    this._broadcastHandlers[event].push(cb);
   },
 
   /* ===== Leave room ===== */
   async leaveRoom(){
     App.haptic('medium');
-    this._gameRunning = false;   // 👈 ریست فلگ
+    this._gameRunning = false;
+    this._broadcastHandlers = {};
     this.cleanup();
     if(this.currentRoom && this.isHost){
       await API.deleteRoom(this.currentRoom.id);
