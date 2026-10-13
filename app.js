@@ -341,23 +341,71 @@ const App = {
   },
 
   viewHome(){
-    const played = Object.keys(this.state.scores).length;
-    return `
-      <div class="hero">
-        <h2>${t('welcome_user')} ${this.state.user.name.split(' ')[0]} 🎮</h2>
-        <p>${t('welcome_sub').split('\n')[1]||''}</p>
-        <div class="stats">
-          <div class="stat"><b>${this.getCoins()}</b><span>${t('coin')}</span></div>
-          <div class="stat"><b>${played}</b><span>${t('active_games')}</span></div>
-          <div class="stat"><b>${GAMES.length}</b><span>${t('total_games')}</span></div>
-        </div>
-      </div>
-      <div class="sect-title">${I.zap} ${t('suggested')}</div>
-      <div class="games">${GAMES.slice(0,4).map(g=>this.gameCard(g)).join('')}</div>
-      <div class="sect-title">${I.game} ${t('all_games')}</div>
-      <div class="games">${GAMES.slice(4).map(g=>this.gameCard(g)).join('')}</div>`;
-  },
+  const played = Object.keys(this.state.scores).length;
+  const onlineGames = GAMES.filter(g => g.online);
 
+  return `
+    <div class="hero">
+      <h2>${t('welcome_user')} ${this.state.user.name.split(' ')[0]} 🎮</h2>
+      <p>${t('welcome_sub').split('\n')[1]||''}</p>
+      <div class="stats">
+        <div class="stat"><b>${this.getCoins()}</b><span>${t('coin')}</span></div>
+        <div class="stat"><b>${played}</b><span>${t('active_games')}</span></div>
+        <div class="stat"><b>${GAMES.length}</b><span>${t('total_games')}</span></div>
+      </div>
+    </div>
+
+    <!-- ===== بخش بازی آنلاین ===== -->
+    <div class="sect-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;color:var(--a1)">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
+      </svg>
+      بازی آنلاین
+    </div>
+
+    <div class="online-section">
+      <div class="online-actions">
+        <button class="online-btn create" onclick="App.showCreateRoom()">
+          <div class="ob-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </div>
+          <div class="ob-text"><b>ساخت اتاق</b><span>خصوصی یا عمومی</span></div>
+        </button>
+        <button class="online-btn join" onclick="App.showJoinRoom()">
+          <div class="ob-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
+            </svg>
+          </div>
+          <div class="ob-text"><b>ورود به اتاق</b><span>با کد اتاق</span></div>
+        </button>
+      </div>
+
+      <div class="sect-subtitle">
+        <span class="live-dot"></span>
+        اتاق‌های در حال اجرا
+      </div>
+      <div class="public-rooms" id="publicRooms">
+        <div class="rooms-loading"><div class="spinner-sm"></div> در حال بارگذاری...</div>
+      </div>
+    </div>
+
+    <!-- ===== بازی‌های تک‌نفره ===== -->
+    <div class="sect-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;color:var(--a2)">
+        <rect x="2" y="6" width="20" height="12" rx="6"/>
+        <line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/>
+        <line x1="15" y1="13" x2="15.01" y2="13"/><line x1="18" y1="11" x2="18.01" y2="11"/>
+      </svg>
+      بازی‌های تک‌نفره
+    </div>
+    <div class="games">${GAMES.filter(g=>!g.online).slice(0,4).map(g=>this.gameCard(g)).join('')}</div>
+    <div class="games" style="margin-top:12px">${GAMES.filter(g=>!g.online).slice(4).map(g=>this.gameCard(g)).join('')}</div>
+  `;
+},
   viewGames(){
     return `<div class="sect-title">${I.game} ${t('all_games')}</div>
       <div class="games">${GAMES.map(g=>this.gameCard(g)).join('')}</div>`;
