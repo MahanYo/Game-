@@ -674,4 +674,401 @@ const Games = {
     shuffle();
     App.state.gState = {};
   }
+  /* ============================================================
+   ONLINE: Tic Tac Toe
+   ============================================================ */
+tttOnline(Online){
+  let board = Array(9).fill('');
+  let mySymbol = Online.isHost ? 'x' : 'o';
+  let myTurn = Online.isHost;
+  let gameOver = false;
+  const body = document.getElementById('gbody');
+
+  function render(){
+    body.innerHTML = `
+      <div class="online-ttt">
+        <div class="online-players-bar">
+          <div class="opb ${Online.isHost?'active':''}">
+            <div class="opb-av">${Online.avatarHTML(Online.currentRoom.host_avatar, Online.currentRoom.host_name)}</div>
+            <div class="opb-name">${Online.currentRoom.host_name}</div>
+            <div class="opb-sym">X</div>
+          </div>
+          <div class="opb-vs">VS</div>
+          <div class="opb ${!Online.isHost?'active':''}">
+            <div class="opb-av">${Online.avatarHTML(Online.currentRoom.guest_avatar, Online.currentRoom.guest_name)}</div>
+            <div class="opb-name">${Online.currentRoom.guest_name}</div>
+            <div class="opb-sym">O</div>
+          </div>
+        </div>
+        <div class="ttt-grid" id="tttGrid">
+          ${board.map((v,i) => `
+            <div class="ttc ${v?'filled '+v:''}" data-i="${i}">
+              ${v === 'x' ? I.xoX : v === 'o' ? I.xoO : ''}
+            </div>
+          `).join('')}
+        </div>
+        <div class="online-turn-info">${myTurn ? 'نوبت شما' : 'نوبت حریف...'}</div>
+      </div>
+    `;
+
+    if(myTurn && !gameOver){
+      document.querySelectorAll('.ttc').forEach(cell => {
+        cell.onclick = () => makeMove(+cell.dataset.i);
+      });
+    }
+  }
+
+  function makeMove(i){
+    if(!myTurn || board[i] || gameOver) return;
+    board[i] = mySymbol;
+    myTurn = false;
+    App.haptic('light');
+    render();
+    Online.send('ttt_move', { index: i, symbol: mySymbol });
+    const w = checkWinner();
+    if(w) end(w);
+  }
+
+  Online.on('ttt_move', (data) => {
+    board[data.index] = data.symbol;
+    myTurn = true;
+    App.haptic('light');
+    render();
+    const w = checkWinner();
+    if(w) end(w);
+  });
+
+  function checkWinner(){
+    const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+    for(const [a,b,c] of lines){
+      if(board[a] && board[a] === board[b] && board[a] === board[c]) return board[a];
+    }
+    if(board.every(v => v)) return 'draw';
+    return null;
+  }
+
+  function end(w){
+    gameOver = true;
+    let coins = 0;
+    if(w === mySymbol){ coins = 5; App.addCoins(coins); App.haptic('success'); }
+    else if(w === 'draw'){ coins = 2; App.addCoins(coins); }
+    setTimeout(() => {
+      App.openModal({
+        icon: w === mySymbol ? I.trophy : w === 'draw' ? I.target : I.medal,
+        title: w === mySymbol ? 'بردی!' : w === 'draw' ? 'مساوی!' : 'باختی!',
+        desc: w === mySymbol ? 'حریف رو شکست دادی!' : '',
+        coins: coins,
+        btns: [{label: 'خروج از اتاق', onClick: () => { App.closeModal(); Online.leaveRoom(); }}]
+      });
+    }, 500);
+  }
+
+  render();
+},
+
+/* ============================================================
+   ONLINE: Hafto4
+   ============================================================ */
+hafto4Online(Online){
+  // نسخه آنلاین بازی هفت و چهار
+  // میزبان منطق بازی رو کنترل میکنه، مهمان فقط حرکاتش رو می‌فرسته
+  const G = {
+    deck: [], myHand: [], oppHand: [], table: [],
+    myCaptured: [], oppCaptured: [], mySours: 0, oppSours: 0,
+    lastCapturer: null, round: 1, turn: 'me', finished: false, busy: false
+  };
+  const isHost = Online.isHost;
+  const SUITS = ['S','H','D','C'];
+  const SUIT_CHARS = { S:'♠', H:'♥', D:'♦', C:'♣' };
+  const RANKS = [1,2,3,4,5,6,7,8,9,10,11,12,13];
+  const body = document.getElementById('gbody');
+
+  function rankLabel(r){
+    if(r === 1) return 'A'; if(r === 11) return 'J'; if(r === 12) return 'Q'; if(r === 13) return 'K';
+    return String(r);
+  }
+  function isRed(s){ return s === 'H' || s === 'D'; }
+  function isNumeral(r){ return r >= 1 && r <= 10; }
+  function faNum(n){ return String(n).replace(/\d/g, d => ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'][+d]); }
+
+  function findCaptures(played, table){
+    const r = played.rank;
+    if(r === 11) return table.filter(c => isNumeral(c.rank) || c.rank === 11);
+    if(r === 13){ const k = table.find(c => c.rank === 13); return k ? [k] : []; }
+    if(r === 12){ const q = table.find(c => c.rank === 12); return q ? [q] : []; }
+    if(r > 10) return [];
+    const need = 11 - r;
+    if(need <= 0) return [];
+    const nums = table.filter(c => isNumeral(c.rank));
+    const single = nums.find(c => c.rank === need);
+    if(single) return [single];
+    for(let i=0;i<nums.length;i++) for(let j=i+1;j<nums.length;j++)
+      if(nums[i].rank + nums[j].rank === need) return [nums[i], nums[j]];
+    for(let i=0;i<nums.length;i++) for(let j=i+1;j<nums.length;j++) for(let k=j+1;k<nums.length;k++)
+      if(nums[i].rank + nums[j].rank + nums[k].rank === need) return [nums[i], nums[j], nums[k]];
+    return [];
+  }
+
+  function buildDeck(){
+    const d = [];
+    for(const s of SUITS) for(const r of RANKS) d.push({suit:s, rank:r, id:s+r});
+    for(let i=d.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [d[i],d[j]]=[d[j],d[i]]; }
+    return d;
+  }
+
+  function scoreHand(captured, sours){
+    const b = { aces:0, jacks:0, clubs7:0, mostClubs:0, twoClubs:0, tenClubs:0, sour:0, total:0, _clubsCount:0 };
+    b.aces = captured.filter(c => c.rank === 1).length;
+    b.jacks = captured.filter(c => c.rank === 11).length;
+    b.twoClubs = captured.some(c => c.suit === 'C' && c.rank === 2) ? 2 : 0;
+    b.tenClubs = captured.some(c => c.suit === 'C' && c.rank === 10) ? 3 : 0;
+    b.sour = sours * 5;
+    b._clubsCount = captured.filter(c => c.suit === 'C').length;
+    b.total = b.aces + b.jacks + b.twoClubs + b.tenClubs + b.sour;
+    return b;
+  }
+  function finalizeScores(){
+    const me = scoreHand(G.myCaptured, G.mySours);
+    const op = scoreHand(G.oppCaptured, G.oppSours);
+    if(me._clubsCount >= 7 && op._clubsCount < 7) me.clubs7 = 7;
+    else if(op._clubsCount >= 7 && me._clubsCount < 7) op.clubs7 = 7;
+    else {
+      if(me._clubsCount > op._clubsCount && me._clubsCount > 3) me.mostClubs = 7;
+      else if(op._clubsCount > me._clubsCount && op._clubsCount > 3) op.mostClubs = 7;
+    }
+    me.total += me.clubs7 + me.mostClubs;
+    op.total += op.clubs7 + op.mostClubs;
+    return { me, opp: op };
+  }
+
+  function cardHTML(card, opts = {}){
+    const label = rankLabel(card.rank);
+    const isFace = ['J','Q','K'].includes(label);
+    const classes = ['card', isRed(card.suit) ? 'red' : ''];
+    if(opts.playable) classes.push('playable');
+    if(opts.clickable) classes.push('clickable');
+    const center = isFace
+      ? `<div class="face-svg">${faceSVG(label, card.suit)}</div>`
+      : `<div class="center-suit">${SUIT_CHARS[card.suit]}</div>`;
+    return `<div class="${classes.join(' ')}" data-id="${card.id}">
+      <div class="crank">${label}</div><div class="csuit">${SUIT_CHARS[card.suit]}</div>
+      ${center}
+      <div class="crank-b">${label}</div><div class="csuit-b">${SUIT_CHARS[card.suit]}</div>
+    </div>`;
+  }
+
+  function render(){
+    const scores = finalizeScores();
+    body.innerHTML = `
+      <div class="online-h4">
+        <div class="online-players-bar">
+          <div class="opb ${!isHost?'active':''}">
+            <div class="opb-av">${Online.avatarHTML(Online.currentRoom.host_avatar, Online.currentRoom.host_name)}</div>
+            <div class="opb-name">${Online.currentRoom.host_name}</div>
+            <div class="opb-score">${faNum(isHost ? scores.opp.total : scores.me.total)}</div>
+          </div>
+          <div class="opb-vs">VS</div>
+          <div class="opb ${isHost?'active':''}">
+            <div class="opb-av">${Online.avatarHTML(Online.currentRoom.guest_avatar, Online.currentRoom.guest_name)}</div>
+            <div class="opb-name">${Online.currentRoom.guest_name}</div>
+            <div class="opb-score">${faNum(isHost ? scores.me.total : scores.opp.total)}</div>
+          </div>
+        </div>
+        <div class="h4-opp-cards">
+          ${Array(Math.min(G.oppHand.length, 8)).fill(0).map(() => '<div class="opp-card"></div>').join('')}
+        </div>
+        <div class="h4-table">
+          <div class="h4-label">زمین (${faNum(G.table.length)})</div>
+          <div class="h4-table-cards">${G.table.map(c => cardHTML(c)).join('')}</div>
+        </div>
+        <div class="h4-my-hand">
+          <div class="h4-label">دست شما (${faNum(G.myHand.length)})</div>
+          <div class="h4-hand-cards">
+            ${G.myHand.map(c => cardHTML(c, {
+              playable: G.turn === 'me' && !G.busy && !G.finished,
+              clickable: G.turn === 'me' && !G.busy && !G.finished
+            })).join('')}
+          </div>
+        </div>
+        <div class="online-turn-info">${G.turn === 'me' ? 'نوبت شما' : 'نوبت حریف...'}</div>
+      </div>
+    `;
+
+    if(G.turn === 'me' && !G.busy && !G.finished){
+      body.querySelectorAll('.h4-hand-cards .card').forEach(el => {
+        el.onclick = () => {
+          const card = G.myHand.find(c => c.id === el.dataset.id);
+          if(card) requestPlay(card);
+        };
+      });
+    }
+  }
+
+  function requestPlay(card){
+    if(isHost) hostPlay(card, 'me');
+    else Online.send('h4_play', { cardId: card.id });
+  }
+
+  function hostPlay(card, who){
+    if(G.busy || G.finished) return;
+    const hand = who === 'me' ? G.myHand : G.oppHand;
+    const idx = hand.findIndex(c => c.id === card.id);
+    if(idx === -1) return;
+    hand.splice(idx, 1);
+    const caps = findCaptures(card, G.table);
+    G.busy = true;
+
+    if(caps.length > 0){
+      caps.forEach(c => {
+        const i = G.table.findIndex(t => t.id === c.id);
+        if(i !== -1) G.table.splice(i, 1);
+      });
+      const captured = who === 'me' ? G.myCaptured : G.oppCaptured;
+      captured.push(card, ...caps);
+      G.lastCapturer = who;
+      if(G.table.length === 0){
+        if(who === 'me') G.mySours++; else G.oppSours++;
+      }
+    } else {
+      G.table.push(card);
+    }
+    App.haptic('light');
+    setTimeout(() => hostAfterPlay(who), 200);
+  }
+
+  function hostAfterPlay(who){
+    if(G.myHand.length === 0 && G.oppHand.length === 0){
+      G.busy = true;
+      hostNextRound();
+      return;
+    }
+    if(who === 'me'){
+      G.turn = 'opp'; G.busy = true;
+    } else {
+      G.turn = 'me'; G.busy = false;
+    }
+    syncState();
+  }
+
+  function hostNextRound(){
+    if(G.table.length > 0 && G.lastCapturer){
+      const t = G.lastCapturer === 'me' ? G.myCaptured : G.oppCaptured;
+      t.push(...G.table);
+      G.table = [];
+    }
+    G.round++;
+    if(G.round > 6){ hostEndGame(); return; }
+    for(let i=0;i<4;i++){
+      if(G.deck.length > 0) G.myHand.push(G.deck.pop());
+      if(G.deck.length > 0) G.oppHand.push(G.deck.pop());
+    }
+    G.turn = 'me'; G.busy = false;
+    syncState();
+  }
+
+  function hostEndGame(){
+    G.finished = true;
+    if(G.table.length > 0 && G.lastCapturer){
+      const t = G.lastCapturer === 'me' ? G.myCaptured : G.oppCaptured;
+      t.push(...G.table);
+      G.table = [];
+    }
+    syncState();
+    Online.send('h4_end', { scores: { me: finalizeScores().me.total, opp: finalizeScores().opp.total }});
+    showEnd();
+  }
+
+  function syncState(){
+    render();
+    if(isHost){
+      Online.send('h4_state', {
+        myHand: G.oppHand,
+        table: G.table,
+        myCaptured: G.oppCaptured,
+        oppCaptured: G.myCaptured,
+        mySours: G.oppSours,
+        oppSours: G.mySours,
+        round: G.round,
+        turn: G.turn === 'me' ? 'opp' : 'me',
+        busy: G.busy,
+        finished: G.finished,
+        lastCapturer: G.lastCapturer === 'me' ? 'opp' : (G.lastCapturer === 'opp' ? 'me' : null)
+      });
+    }
+  }
+
+  // Guest receiver
+  Online.on('h4_state', (state) => {
+    if(isHost) return;
+    G.myHand = state.myHand || [];
+    G.table = state.table || [];
+    G.myCaptured = state.myCaptured || [];
+    G.oppCaptured = state.oppCaptured || [];
+    G.mySours = state.mySours || 0;
+    G.oppSours = state.oppSours || 0;
+    G.round = state.round || 1;
+    G.turn = state.turn || 'me';
+    G.busy = state.busy || false;
+    G.finished = state.finished || false;
+    G.lastCapturer = state.lastCapturer;
+    render();
+  });
+
+  Online.on('h4_play', (data) => {
+    if(!isHost) return;
+    const card = G.oppHand.find(c => c.id === data.cardId);
+    if(card) hostPlay(card, 'opp');
+  });
+
+  Online.on('h4_end', () => { if(!isHost) showEnd(); });
+
+  function showEnd(){
+    const scores = finalizeScores();
+    const me = scores.me.total;
+    const opp = scores.opp.total;
+    const iWon = me > opp;
+    const isTie = me === opp;
+    let coins = iWon ? Math.max(8, Math.min(30, 10 + me)) : (isTie ? 5 : 2);
+    App.addCoins(coins);
+    App.setScore('hafto4', me);
+
+    setTimeout(() => {
+      App.openModal({
+        icon: iWon ? I.trophy : isTie ? I.target : I.medal,
+        title: iWon ? 'بردی!' : isTie ? 'مساوی!' : 'باختی!',
+        desc: `امتیاز شما: ${faNum(me)} · حریف: ${faNum(opp)}`,
+        coins: coins,
+        btns: [{label: 'خروج از اتاق', onClick: () => { App.closeModal(); Online.leaveRoom(); }}]
+      });
+    }, 500);
+  }
+
+  // Host: شروع
+  if(isHost){
+    G.deck = buildDeck();
+    for(let i=0;i<4;i++){
+      G.myHand.push(G.deck.pop());
+      G.oppHand.push(G.deck.pop());
+    }
+    for(let i=0;i<4;i++) G.table.push(G.deck.pop());
+    G.turn = 'me';
+    syncState();
+  } else {
+    render();
+  }
+},
+
+/* ============================================================
+   ONLINE: Checkers (ساده)
+   ============================================================ */
+checkersOnline(Online){
+  // برای اختصار، فقط ساختار پایه
+  const body = document.getElementById('gbody');
+  body.innerHTML = `
+    <div style="text-align:center;padding:40px 20px;color:var(--mut)">
+      <h3 style="color:var(--tx);margin-bottom:12px">شطرنج / چکرز</h3>
+      <p>این بازی در حال توسعه‌ست</p>
+    </div>
+  `;
+}
 };
