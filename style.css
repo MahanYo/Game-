@@ -825,3 +825,113 @@ body{overscroll-behavior:none;user-select:none;-webkit-user-select:none}
   gap:4px;
   flex-shrink:0;
 }
+
+/* ============ ONLINE TTT GRID ============ */
+.ttt-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+  width:100%;
+  max-width:320px;
+  margin:0 auto;
+  aspect-ratio:1;
+}
+
+/* ============ ONLINE H4 CARDS ============ */
+.card{
+  width:48px;
+  height:68px;
+  background:#fff;
+  border-radius:6px;
+  position:relative;
+  color:#18181b;
+  box-shadow:0 2px 8px rgba(0,0,0,.4),0 1px 2px rgba(0,0,0,.3);
+  flex-shrink:0;
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.card.red{color:#dc2626}
+.card .crank{
+  position:absolute;top:3px;left:4px;
+  font-size:13px;font-weight:900;line-height:1;
+  font-family:"Arial Black",Arial,sans-serif;
+  letter-spacing:-.5px;
+}
+.card .csuit{
+  position:absolute;top:17px;left:4px;
+  font-size:11px;line-height:1;
+}
+.card .crank-b{
+  position:absolute;bottom:3px;right:4px;
+  font-size:13px;font-weight:900;line-height:1;
+  transform:rotate(180deg);
+  font-family:"Arial Black",Arial,sans-serif;
+  letter-spacing:-.5px;
+}
+.card .csuit-b{
+  position:absolute;bottom:17px;right:4px;
+  font-size:11px;line-height:1;transform:rotate(180deg);
+}
+.card .center-suit{
+  font-size:28px;line-height:1;opacity:.9;
+}
+.card .face-svg{
+  position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  width:30px;height:42px;
+  border-radius:3px;overflow:hidden;
+  border:1px solid #d4a017;
+  background:linear-gradient(180deg,#fef3c7,#fde68a);
+}
+.card .face-svg svg{width:100%;height:100%;display:block}
+
+/* Card states */
+.card.clickable{cursor:pointer}
+.card.clickable:active{transform:translateY(-2px) scale(.96)}
+.card.playable{
+  box-shadow:0 0 0 2px var(--a1),0 4px 14px rgba(16,185,129,.4);
+}
+.card.playable::after{
+  content:"";position:absolute;inset:-2px;border-radius:8px;
+  border:2px solid var(--a1);opacity:0;
+  animation:playablePulse 1.5s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes playablePulse{
+  0%,100%{opacity:.4;transform:scale(1)}
+  50%{opacity:1;transform:scale(1.05)}
+}
+
+/* Opponent cards (face down) */
+.h4-opp-cards{
+  position:relative;
+  display:flex;
+  justify-content:center;
+  height:44px;
+  align-items:center;
+}
+.opp-card{
+  position:absolute;
+  width:28px;
+  height:42px;
+  background:repeating-linear-gradient(45deg,#1e3a8a 0 3px,#1e40af 3px 6px);
+  border:1.5px solid rgba(255,255,255,.5);
+  border-radius:5px;
+  box-shadow:0 2px 5px rgba(0,0,0,.4);
+}
+.opp-card::after{
+  content:"";position:absolute;inset:3px;border-radius:3px;
+  border:1px solid rgba(255,255,255,.2);
+}
+
+/* Table area tweaks */
+.h4-table-cards,.h4-hand-cards{
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
+  justify-content:center;
+  min-height:70px;
+  align-items:center;
+}
