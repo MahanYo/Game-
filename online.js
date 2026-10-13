@@ -1,5 +1,5 @@
 /* ============================================================
-   ONLINE SYSTEM
+   ONLINE SYSTEM — Auto-sync version
    ============================================================ */
 const Online = {
   currentRoom: null,
@@ -7,6 +7,9 @@ const Online = {
   players: [],
   isHost: false,
   gameType: null,
+  _pollTimer: null,
+  _roomSub: null,
+  _heartbeat: null,
 
   /* ===== Generate room code ===== */
   genCode(){
@@ -16,7 +19,7 @@ const Online = {
     return code;
   },
 
-  /* ===== Avatar HTML helper ===== */
+  /* ===== Avatar HTML ===== */
   avatarHTML(avatar, name){
     if(avatar){
       if(avatar.type === 'img') return `<img src="${avatar.value}" style="width:100%;height:100%;object-fit:cover">`;
@@ -57,7 +60,6 @@ const Online = {
     this.isHost = true;
     this.gameType = gameType;
 
-    // ذخیره در localStorage
     localStorage.setItem('gh_current_room', JSON.stringify({
       code: code, gameType: gameType, isHost: true
     }));
@@ -96,8 +98,14 @@ const Online = {
     if(!sb){ App.toast('اتصال برقرار نیست'); return; }
     const room = await API.getRoom(code.toUpperCase());
     if(!room){ App.toast('اتاق پیدا نشد'); App.haptic('error'); return; }
-    if(room.status === 'playing'){ App.toast('این اتاق پر است'); return; }
-    if(room.host_id === App.state.user.username){ App.toast('به اتاق خودت نمیتونی بپیوندی'); return; }
+    if(room.host_id === App.state.user.username){ 
+      // میزبان دوباره وارد میشه
+      this.currentRoom = room;
+      this.isHost = true;
+      this.gameType = room.game_type;
+      this.enterLobby(room);
+      return;
+    }
 
     const u = App.state.user;
     await API.updateRoom(room.id, {
@@ -130,8 +138,22 @@ const Online = {
   /* ===== Enter lobby ===== */
   enterLobby(room){
     App.haptic('success');
+    this.currentRoom = room;
+
+    // پاک کردن کانال قبلی
+    this.cleanup();
+
     this.renderLobby(room);
     this.connectPresence(room.room_code);
+    this.watchRoomChanges(room.id);
+  },
+
+  /* ===== Cleanup ===== */
+  cleanup(){
+    if(this._pollTimer){ clearInterval(this._pollTimer); this._pollTimer = null; }
+    if(this._heartbeat){ clearInterval(this._heartbeat); this._heartbeat = null; }
+    if(this._roomSub){ try{ sb.removeChannel(this._roomSub); }catch(e){} this._roomSub = null; }
+    if(this.channel){ try{ sb.removeChannel(this.channel); }catch(e){} this.channel = null; }
   },
 
   /* ===== Render lobby ===== */
@@ -140,8 +162,8 @@ const Online = {
     const u = App.state.user;
     const isHost = room.host_id === u.username;
 
-    document.getElementById('startScreen')?.classList.remove('on');
-    document.getElementById('gameScreen')?.classList.remove('on');
+    // مخفی کردن بقیه صفحه‌ها
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
 
     let lobby = document.getElementById('lobbyScreen');
     if(!lobby){
@@ -151,6 +173,12 @@ const Online = {
       document.getElementById('app').appendChild(lobby);
     }
     lobby.classList.add('on');
+
+    // اطلاعات مهمان
+    const guest = room.guest_id ? {
+      name: room.guest_name,
+      avatar: room.guest_avatar
+    } : null;
 
     lobby.innerHTML = `
       <div class="topbar">
@@ -173,12 +201,18 @@ const Online = {
             <div class="lp-status ready">آماده</div>
           </div>
           <div class="lobby-vs">VS</div>
-          <div class="lobby-player guest empty" id="guestSlot">
-            <div class="lp-avatar">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:24px;height:24px"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            </div>
-            <div class="lp-info"><b>در انتظار...</b><span>مهمان</span></div>
-            <div class="lp-status waiting"><div class="spinner-sm"></div></div>
+          <div class="lobby-player guest ${guest ? '' : 'empty'}" id="guestSlot">
+            ${guest ? `
+              <div class="lp-avatar">${this.avatarHTML(guest.avatar, guest.name)}</div>
+              <div class="lp-info"><b>${guest.name}</b><span>مهمان</span></div>
+              <div class="lp-status ready">آماده</div>
+            ` : `
+              <div class="lp-avatar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:24px;height:24px"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </div>
+              <div class="lp-info"><b>در انتظار...</b><span>مهمان</span></div>
+              <div class="lp-status waiting"><div class="spinner-sm"></div></div>
+            `}
           </div>
         </div>
 
@@ -186,42 +220,89 @@ const Online = {
           کد اتاق: <span>${room.room_code}</span>
         </div>
 
-        <button class="btn" id="lobbyActionBtn" disabled>
-          ${isHost ? 'منتظر ورود مهمان...' : 'آماده‌ام!'}
+        <button class="btn" id="lobbyActionBtn">
+          ${isHost ? (guest ? 'شروع بازی!' : 'منتظر ورود مهمان...') : 'آماده‌ام!'}
         </button>
       </div>
     `;
 
-    document.getElementById('lobbyActionBtn').onclick = () => {
-      if(this.isHost) return;
-      App.haptic('success');
-      this.channel?.send({ type: 'broadcast', event: 'ready', payload: { username: u.username }});
-      App.toast('آماده‌ای! منتظر شروع باش...');
-    };
+    const btn = document.getElementById('lobbyActionBtn');
+    if(isHost){
+      btn.disabled = !guest;
+      if(guest){
+        btn.onclick = () => this.startGame();
+      }
+    } else {
+      btn.onclick = () => {
+        App.haptic('success');
+        this.channel?.send({ type: 'broadcast', event: 'ready', payload: { username: u.username }});
+        App.toast('آماده‌ای! منتظر شروع باش...');
+        btn.textContent = '✓ آماده';
+        btn.disabled = true;
+      };
+    }
   },
 
-  /* ===== Presence ===== */
-  connectPresence(roomCode){
-    if(this.channel) sb.removeChannel(this.channel);
-    const u = App.state.user;
+  /* ===== Watch room changes (Realtime روی جدول rooms) ===== */
+  watchRoomChanges(roomId){
+    this._roomSub = sb.channel('room-watch:' + roomId + ':' + Date.now())
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'rooms',
+        filter: `id=eq.${roomId}`
+      }, (payload) => {
+        const updated = payload.new;
+        this.currentRoom = { ...this.currentRoom, ...updated };
+        this.renderLobby(this.currentRoom);
+        if(updated.guest_id && this.isHost){
+          App.haptic('success');
+        }
+      })
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'rooms',
+        filter: `id=eq.${roomId}`
+      }, () => {
+        App.toast('اتاق بسته شد');
+        this.leaveRoom();
+      })
+      .subscribe();
+  },
 
-    this.channel = sb.channel('room:' + roomCode, {
-      config: { presence: { key: u.username }, broadcast: { self: false } }
+  /* ===== Presence + Broadcast ===== */
+  connectPresence(roomCode){
+    const u = App.state.user;
+    const channelName = `room:${roomCode}:${u.username}:${Date.now()}`;
+
+    this.channel = sb.channel(channelName, {
+      config: {
+        presence: { key: u.username },
+        broadcast: { self: false }
+      }
     });
 
     this.channel
       .on('presence', { event: 'sync' }, () => {
         const state = this.channel.presenceState();
         this.players = Object.values(state).flat();
-        this.updateLobby();
+        this.updateLobbyFromPresence();
       })
       .on('presence', { event: 'join' }, ({ newPresences }) => {
-        App.toast('👋 ' + (newPresences[0]?.name || 'حریف') + ' وارد شد');
-        App.haptic('success');
-        this.updateLobby();
+        const who = newPresences[0];
+        if(who && who.username !== u.username){
+          App.toast('👋 ' + (who.name || 'حریف') + ' وارد شد');
+          App.haptic('success');
+        }
+        const state = this.channel.presenceState();
+        this.players = Object.values(state).flat();
+        this.updateLobbyFromPresence();
       })
       .on('presence', { event: 'leave' }, () => {
-        App.toast('🚪 حریف خارج شد');
+        const state = this.channel.presenceState();
+        this.players = Object.values(state).flat();
+        this.updateLobbyFromPresence();
       })
       .on('broadcast', { event: 'ready' }, () => {
         if(this.isHost){
@@ -231,6 +312,7 @@ const Online = {
             btn.textContent = 'شروع بازی!';
             btn.onclick = () => this.startGame();
           }
+          App.haptic('success');
         }
       })
       .on('broadcast', { event: 'game_start' }, () => {
@@ -248,32 +330,39 @@ const Online = {
       });
   },
 
-  /* ===== Update lobby ===== */
-  updateLobby(){
-    const guestSlot = document.getElementById('guestSlot');
-    if(!guestSlot) return;
+  /* ===== Update lobby from presence (اگه هنوز مهمان توی DB نیست) ===== */
+  updateLobbyFromPresence(){
+    if(!this.currentRoom) return;
+    const u = App.state.user;
+    const host = this.currentRoom.host_id;
 
-    const guest = this.players.find(p => p.username !== this.currentRoom.host_id);
+    const otherPlayer = this.players.find(p => 
+      p.username && 
+      p.username !== u.username && 
+      p.username !== host
+    );
 
-    if(guest){
-      guestSlot.className = 'lobby-player guest';
-      guestSlot.innerHTML = `
-        <div class="lp-avatar">${this.avatarHTML(guest.avatar, guest.name)}</div>
-        <div class="lp-info"><b>${guest.name}</b><span>مهمان</span></div>
-        <div class="lp-status ready">آماده</div>
-      `;
-      if(this.isHost){
-        const btn = document.getElementById('lobbyActionBtn');
-        if(btn){
-          btn.disabled = false;
-          btn.textContent = 'شروع بازی!';
-          btn.onclick = () => this.startGame();
-        }
-      }
+    // اگه هنوز توی DB مهمان نیست ولی توی presence هست، دستی اضافه کن
+    if(otherPlayer && !this.currentRoom.guest_id){
+      this.currentRoom.guest_id = otherPlayer.username;
+      this.currentRoom.guest_name = otherPlayer.name;
+      this.currentRoom.guest_avatar = otherPlayer.avatar;
+      this.renderLobby(this.currentRoom);
+    }
+
+    // اگه مهمان از presence رفته ولی توی DB هست
+    if(!otherPlayer && this.currentRoom.guest_id && !this.isHost){
+      // مهمان (خودم) رفت، نادیده بگیر
+    } else if(!otherPlayer && this.currentRoom.guest_id && this.isHost){
+      // حریف خارج شد
+      this.currentRoom.guest_id = null;
+      this.currentRoom.guest_name = null;
+      this.currentRoom.guest_avatar = null;
+      this.renderLobby(this.currentRoom);
     }
   },
 
-  /* ===== Start game ===== */
+  /* ===== Start game (host) ===== */
   startGame(){
     App.haptic('success');
     this.channel?.send({ type: 'broadcast', event: 'game_start', payload: {} });
@@ -285,26 +374,32 @@ const Online = {
     const lobby = document.getElementById('lobbyScreen');
     if(lobby) lobby.classList.remove('on');
 
-    document.getElementById('gameScreen').classList.add('on');
     const g = GMAP[this.gameType];
     document.getElementById('gtitle').textContent = t(g.nameKey);
     document.getElementById('gscore').innerHTML = `<span id="scoreVal">0</span>`;
     document.getElementById('gbody').innerHTML = '';
     document.getElementById('gview').classList.add('open');
 
-    const onlineGames = {
-      hafto4: Games.hafto4Online,
-      ttt: Games.tttOnline,
-      chess: Games.chessOnline
-    };
-    const fn = onlineGames[this.gameType];
-    if(fn) fn(this);
+    // مطمئن شو کانال آماده‌ست
+    setTimeout(() => {
+      const onlineGames = {
+        hafto4: Games.hafto4Online,
+        ttt: Games.tttOnline,
+        chess: Games.chessOnline
+      };
+      const fn = onlineGames[this.gameType];
+      if(fn) fn(this);
+    }, 300);
   },
 
   /* ===== Send / Listen ===== */
   send(event, data){
     if(!this.channel) return;
-    this.channel.send({ type: 'broadcast', event, payload: { ...data, sender: App.state.user.username } });
+    this.channel.send({ 
+      type: 'broadcast', 
+      event, 
+      payload: { ...data, sender: App.state.user.username } 
+    });
   },
   on(event, cb){
     if(!this.channel) return;
@@ -317,10 +412,10 @@ const Online = {
   /* ===== Leave room ===== */
   async leaveRoom(){
     App.haptic('medium');
+    this.cleanup();
     if(this.currentRoom && this.isHost){
       await API.deleteRoom(this.currentRoom.id);
     }
-    if(this.channel){ sb.removeChannel(this.channel); this.channel = null; }
     this.currentRoom = null;
     this.isHost = false;
     this.gameType = null;
@@ -329,7 +424,6 @@ const Online = {
 
     const lobby = document.getElementById('lobbyScreen');
     if(lobby) lobby.classList.remove('on');
-    document.getElementById('gameScreen')?.classList.remove('on');
     document.getElementById('gview')?.classList.remove('open');
     document.getElementById('startScreen')?.classList.add('on');
     App.go('home');
