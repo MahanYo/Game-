@@ -57,6 +57,11 @@ const Online = {
     this.isHost = true;
     this.gameType = gameType;
 
+    // ذخیره در localStorage
+    localStorage.setItem('gh_current_room', JSON.stringify({
+      code: code, gameType: gameType, isHost: true
+    }));
+
     if(isPrivate){
       this.showRoomCode(code);
     } else {
@@ -64,14 +69,9 @@ const Online = {
     }
   },
 
-  /* ===== Show room code (private) ===== */
+  /* ===== Show room code ===== */
   showRoomCode(code){
-    App.openModal({
-      icon: I.check,
-      title: 'اتاق خصوصی ساخته شد',
-      desc: 'این کد رو برای دوستت بفرست',
-      btns: []
-    });
+    App.openModal({ icon: I.check, title: '', desc: '', btns: [] });
     document.getElementById('mbox').innerHTML = `
       <div class="mico" style="background:linear-gradient(135deg,#8b5cf6,#6366f1)">${I.user}</div>
       <h3>اتاق خصوصی ساخته شد</h3>
@@ -91,7 +91,7 @@ const Online = {
     };
   },
 
-  /* ===== Join room by code ===== */
+  /* ===== Join room ===== */
   async joinRoom(code){
     if(!sb){ App.toast('اتصال برقرار نیست'); return; }
     const room = await API.getRoom(code.toUpperCase());
@@ -112,6 +112,11 @@ const Online = {
     this.currentRoom = { ...room, guest_id: u.username, guest_name: u.name, guest_avatar: u.avatar };
     this.isHost = false;
     this.gameType = room.game_type;
+
+    localStorage.setItem('gh_current_room', JSON.stringify({
+      code: room.room_code, gameType: room.game_type, isHost: false
+    }));
+
     this.enterLobby(this.currentRoom);
   },
 
@@ -135,7 +140,6 @@ const Online = {
     const u = App.state.user;
     const isHost = room.host_id === u.username;
 
-    // حذف صفحه‌های دیگه
     document.getElementById('startScreen')?.classList.remove('on');
     document.getElementById('gameScreen')?.classList.remove('on');
 
@@ -214,8 +218,9 @@ const Online = {
       .on('presence', { event: 'join' }, ({ newPresences }) => {
         App.toast('👋 ' + (newPresences[0]?.name || 'حریف') + ' وارد شد');
         App.haptic('success');
+        this.updateLobby();
       })
-      .on('presence', { event: 'leave' }, ({ leftPresences }) => {
+      .on('presence', { event: 'leave' }, () => {
         App.toast('🚪 حریف خارج شد');
       })
       .on('broadcast', { event: 'ready' }, () => {
@@ -229,7 +234,6 @@ const Online = {
         }
       })
       .on('broadcast', { event: 'game_start' }, () => {
-        // شروع از طرف میزبان
         this.launchGame();
       })
       .subscribe(async (status) => {
@@ -244,12 +248,11 @@ const Online = {
       });
   },
 
-  /* ===== Update lobby players ===== */
+  /* ===== Update lobby ===== */
   updateLobby(){
     const guestSlot = document.getElementById('guestSlot');
     if(!guestSlot) return;
 
-    const host = this.players.find(p => p.username === this.currentRoom.host_id);
     const guest = this.players.find(p => p.username !== this.currentRoom.host_id);
 
     if(guest){
@@ -261,7 +264,7 @@ const Online = {
       `;
       if(this.isHost){
         const btn = document.getElementById('lobbyActionBtn');
-        if(btn && btn.textContent.includes('منتظر')){
+        if(btn){
           btn.disabled = false;
           btn.textContent = 'شروع بازی!';
           btn.onclick = () => this.startGame();
@@ -270,14 +273,14 @@ const Online = {
     }
   },
 
-  /* ===== Start game (host) ===== */
+  /* ===== Start game ===== */
   startGame(){
     App.haptic('success');
     this.channel?.send({ type: 'broadcast', event: 'game_start', payload: {} });
     this.launchGame();
   },
 
-  /* ===== Launch actual game ===== */
+  /* ===== Launch game ===== */
   launchGame(){
     const lobby = document.getElementById('lobbyScreen');
     if(lobby) lobby.classList.remove('on');
@@ -289,12 +292,10 @@ const Online = {
     document.getElementById('gbody').innerHTML = '';
     document.getElementById('gview').classList.add('open');
 
-    // اجرای بازی آنلاین
     const onlineGames = {
       hafto4: Games.hafto4Online,
       ttt: Games.tttOnline,
-      chess: Games.chessOnline,
-      checkers: Games.checkersOnline
+      chess: Games.chessOnline
     };
     const fn = onlineGames[this.gameType];
     if(fn) fn(this);
@@ -323,6 +324,8 @@ const Online = {
     this.currentRoom = null;
     this.isHost = false;
     this.gameType = null;
+
+    localStorage.removeItem('gh_current_room');
 
     const lobby = document.getElementById('lobbyScreen');
     if(lobby) lobby.classList.remove('on');
