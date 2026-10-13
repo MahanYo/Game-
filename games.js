@@ -673,7 +673,7 @@ const Games = {
     document.getElementById('pzNew').onclick = ()=>shuffle();
     shuffle();
     App.state.gState = {};
-  }
+  },
   /* ============================================================
    ONLINE: Tic Tac Toe
    ============================================================ */
