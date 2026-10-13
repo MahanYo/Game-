@@ -272,63 +272,69 @@ const Online = {
   },
 
   /* ===== Presence + Broadcast ===== */
-  connectPresence(roomCode){
-    const u = App.state.user;
-    const channelName = `room:${roomCode}:${u.username}:${Date.now()}`;
+async connectPresence(roomCode){
+  // پاک کردن کانال قبلی
+  if(this.channel){
+    try{ await sb.removeChannel(this.channel); }catch(e){}
+    this.channel = null;
+  }
 
-    this.channel = sb.channel(channelName, {
-      config: {
-        presence: { key: u.username },
-        broadcast: { self: false }
+  const u = App.state.user;
+  const channelName = `room:${roomCode}`;   // 👈 یکسان برای هر دو
+
+  this.channel = sb.channel(channelName, {
+    config: {
+      presence: { key: u.username },
+      broadcast: { self: false }
+    }
+  });
+
+  this.channel
+    .on('presence', { event: 'sync' }, () => {
+      const state = this.channel.presenceState();
+      this.players = Object.values(state).flat();
+      this.updateLobbyFromPresence();
+    })
+    .on('presence', { event: 'join' }, ({ newPresences }) => {
+      const who = newPresences[0];
+      if(who && who.username !== u.username){
+        App.toast('👋 ' + (who.name || 'حریف') + ' وارد شد');
+        App.haptic('success');
+      }
+      const state = this.channel.presenceState();
+      this.players = Object.values(state).flat();
+      this.updateLobbyFromPresence();
+    })
+    .on('presence', { event: 'leave' }, () => {
+      const state = this.channel.presenceState();
+      this.players = Object.values(state).flat();
+      this.updateLobbyFromPresence();
+    })
+    .on('broadcast', { event: 'ready' }, () => {
+      if(this.isHost){
+        const btn = document.getElementById('lobbyActionBtn');
+        if(btn){
+          btn.disabled = false;
+          btn.textContent = 'شروع بازی!';
+          btn.onclick = () => this.startGame();
+        }
+        App.haptic('success');
+      }
+    })
+    .on('broadcast', { event: 'game_start' }, () => {
+      this.launchGame();
+    })
+    .subscribe(async (status) => {
+      if(status === 'SUBSCRIBED'){
+        await this.channel.track({
+          username: u.username,
+          name: u.name,
+          avatar: u.avatar,
+          joinedAt: Date.now()
+        });
       }
     });
-
-    this.channel
-      .on('presence', { event: 'sync' }, () => {
-        const state = this.channel.presenceState();
-        this.players = Object.values(state).flat();
-        this.updateLobbyFromPresence();
-      })
-      .on('presence', { event: 'join' }, ({ newPresences }) => {
-        const who = newPresences[0];
-        if(who && who.username !== u.username){
-          App.toast('👋 ' + (who.name || 'حریف') + ' وارد شد');
-          App.haptic('success');
-        }
-        const state = this.channel.presenceState();
-        this.players = Object.values(state).flat();
-        this.updateLobbyFromPresence();
-      })
-      .on('presence', { event: 'leave' }, () => {
-        const state = this.channel.presenceState();
-        this.players = Object.values(state).flat();
-        this.updateLobbyFromPresence();
-      })
-      .on('broadcast', { event: 'ready' }, () => {
-        if(this.isHost){
-          const btn = document.getElementById('lobbyActionBtn');
-          if(btn){
-            btn.disabled = false;
-            btn.textContent = 'شروع بازی!';
-            btn.onclick = () => this.startGame();
-          }
-          App.haptic('success');
-        }
-      })
-      .on('broadcast', { event: 'game_start' }, () => {
-        this.launchGame();
-      })
-      .subscribe(async (status) => {
-        if(status === 'SUBSCRIBED'){
-          await this.channel.track({
-            username: u.username,
-            name: u.name,
-            avatar: u.avatar,
-            joinedAt: Date.now()
-          });
-        }
-      });
-  },
+},
 
   /* ===== Update lobby from presence (اگه هنوز مهمان توی DB نیست) ===== */
   updateLobbyFromPresence(){
