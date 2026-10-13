@@ -751,4 +751,27 @@ body{overscroll-behavior:none;user-select:none;-webkit-user-select:none}
 .h4-label{font-size:10px;font-weight:700;color:rgba(255,255,255,.5);
   text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;text-align:center}
 .h4-table-cards,.h4-hand-cards{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;min-height:60px}
+
+/* ============ SCREEN (Base) ============ */
+.screen{
+  position:absolute;
+  inset:0;
+  display:none;
+  flex-direction:column;
+  z-index:100;
+  overflow:hidden;
+}
+.screen.on{display:flex}
+
+/* ============ LOBBY SCREEN ============ */
+#lobbyScreen{
+  position:absolute;
+  inset:0;
+  z-index:150;
+  display:none;
+  flex-direction:column;
+  background:radial-gradient(ellipse at center,var(--felt-1,#0d5a2d) 0%,var(--felt-2,#052e14) 100%);
+  overflow:hidden;
+}
+#lobbyScreen.on{display:flex}
 </style>
