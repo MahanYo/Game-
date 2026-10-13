@@ -320,25 +320,26 @@ const App = {
   },
 
   go(screen){
-    this.state.screen = screen;
-    this.renderHeader(); this.renderNav();
-    const m = document.getElementById('main');
-    m.classList.remove('fade'); void m.offsetWidth; m.classList.add('fade');
-    m.scrollTop = 0;
-    const views = {
-      home:()=>this.viewHome(),
-      games:()=>this.viewGames(),
-      profile:()=>this.viewProfile(),
-      rank:()=>this.viewRank(),
-      notifications:()=>this.viewNotifications(),
-      settings:()=>Settings.render(),
-      shop:()=>(typeof Shop !== 'undefined') ? Shop.render() : ''
-    };
-    m.innerHTML = views[screen] ? views[screen]() : '';
-    if(screen==='settings') Settings.bind();
-    if(screen==='shop' && typeof Shop !== 'undefined') Shop.bind();
-    if(screen==='notifications') this.markAllRead();
-  },
+  this.state.screen = screen;
+  this.renderHeader(); this.renderNav();
+  const m = document.getElementById('main');
+  m.classList.remove('fade'); void m.offsetWidth; m.classList.add('fade');
+  m.scrollTop = 0;
+  const views = {
+    home:()=>this.viewHome(),
+    games:()=>this.viewGames(),
+    profile:()=>this.viewProfile(),
+    rank:()=>this.viewRank(),
+    notifications:()=>this.viewNotifications(),
+    settings:()=>Settings.render(),
+    shop:()=>(typeof Shop !== 'undefined') ? Shop.render() : ''
+  };
+  m.innerHTML = views[screen] ? views[screen]() : '';
+  if(screen==='settings') Settings.bind();
+  if(screen==='shop' && typeof Shop !== 'undefined') Shop.bind();
+  if(screen==='notifications') this.markAllRead();
+  if(screen === 'home') setTimeout(() => this.loadPublicRooms(), 100);
+},
 
   viewHome(){
   const played = Object.keys(this.state.scores).length;
