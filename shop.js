@@ -28,11 +28,9 @@ const Shop = {
   },
 
   /* ===== Coin helpers ===== */
-  getCoins(){
-    const earned = Object.values(App.state.scores).reduce((a,b)=>a+b,0);
-    const spent = App.state.spent || 0;
-    return Math.max(0, earned - spent);
-  },
+getCoins(){ 
+  return App.getCoins(); 
+},
 
   /* ===== Generate unique code ===== */
   genCode(productId){
