@@ -77,6 +77,43 @@ const API = {
       list.push(userId);
       await sb.from('notifications').update({ read_by: list }).eq('id', id);
     }
+  },
+
+  // ============ اتاق‌های آنلاین ============
+  async getPublicRooms(){
+    if(!sb) return [];
+    const { data, error } = await sb.from('rooms')
+      .select('*')
+      .eq('is_private', false)
+      .neq('status', 'finished')
+      .order('created_at', { ascending: false })
+      .limit(20);
+    if(error){ console.error('getPublicRooms:', error); return []; }
+    return data || [];
+  },
+
+  async getRoom(code){
+    if(!sb) return null;
+    const { data, error } = await sb.from('rooms').select('*').eq('room_code', code).single();
+    if(error) return null;
+    return data;
+  },
+
+  async createRoom(room){
+    if(!sb) return null;
+    const { data, error } = await sb.from('rooms').insert(room).select().single();
+    if(error){ console.error('createRoom:', error); return null; }
+    return data;
+  },
+
+  async updateRoom(id, updates){
+    if(!sb) return;
+    await sb.from('rooms').update(updates).eq('id', id);
+  },
+
+  async deleteRoom(id){
+    if(!sb) return;
+    await sb.from('rooms').delete().eq('id', id);
   }
 };
 
