@@ -1,3 +1,30 @@
+/* ============================================================
+   FACE CARD SVG
+   ============================================================ */
+function faceSVG(rank, suit){
+  const isRed = suit === 'H' || suit === 'D';
+  const skin = '#f5c99b';
+  const robe = isRed ? '#c81e1e' : '#1e293b';
+  const robeDark = isRed ? '#991b1b' : '#0f172a';
+  const crown = '#fbbf24';
+  const crownDark = '#d97706';
+  const hair = rank === 'Q' && isRed ? '#f59e0b' : (rank === 'Q' ? '#1c1917' : '#3f3f46');
+
+  if(rank === 'K'){
+    return `<svg viewBox="0 0 58 80" xmlns="http://www.w3.org/2000/svg"><rect width="58" height="80" fill="#fef3c7"/><path d="M14 80 Q14 62 29 62 Q44 62 44 80 Z" fill="${robe}"/><path d="M29 62 L29 80" stroke="${robeDark}" stroke-width="1"/><ellipse cx="29" cy="42" rx="11" ry="13" fill="${skin}"/><path d="M18 38 Q18 28 29 28 Q40 28 40 38 Q40 34 36 32 Q32 30 29 30 Q26 30 22 32 Q18 34 18 38 Z" fill="${hair}"/><path d="M17 28 L20 20 L23 26 L26 18 L29 25 L32 18 L35 26 L38 20 L41 28 Z" fill="${crown}" stroke="${crownDark}" stroke-width="1"/><circle cx="20" cy="20" r="1.5" fill="#dc2626"/><circle cx="29" cy="18" r="1.5" fill="#2563eb"/><circle cx="38" cy="20" r="1.5" fill="#dc2626"/><circle cx="25" cy="42" r="1.3" fill="#18181b"/><circle cx="33" cy="42" r="1.3" fill="#18181b"/><path d="M24 48 Q26 46 29 47 Q32 46 34 48 Q32 49.5 29 49 Q26 49.5 24 48 Z" fill="${hair}"/></svg>`;
+  }
+  if(rank === 'Q'){
+    return `<svg viewBox="0 0 58 80" xmlns="http://www.w3.org/2000/svg"><rect width="58" height="80" fill="#fce7f3"/><path d="M13 80 Q13 60 29 60 Q45 60 45 80 Z" fill="${isRed?'#ec4899':'#6366f1'}"/><path d="M15 45 Q13 30 29 26 Q45 30 43 45 Q43 55 40 58 L18 58 Q15 55 15 45 Z" fill="${hair}"/><ellipse cx="29" cy="42" rx="10" ry="12" fill="${skin}"/><path d="M19 40 Q19 30 29 30 Q39 30 39 40 Q38 34 34 33 Q30 32 29 33 Q28 32 24 33 Q20 34 19 40 Z" fill="${hair}"/><path d="M19 30 L22 24 L25 28 L29 22 L33 28 L36 24 L39 30 Z" fill="${crown}" stroke="${crownDark}" stroke-width=".9"/><circle cx="29" cy="22" r="1.4" fill="#fff"/><ellipse cx="25" cy="42" rx="1.2" ry="1.5" fill="#18181b"/><ellipse cx="33" cy="42" rx="1.2" ry="1.5" fill="#18181b"/><path d="M25.5 48 Q29 47 32.5 48 Q31 50.5 29 50.5 Q27 50.5 25.5 48 Z" fill="#dc2626"/></svg>`;
+  }
+  if(rank === 'J'){
+    return `<svg viewBox="0 0 58 80" xmlns="http://www.w3.org/2000/svg"><rect width="58" height="80" fill="#e0e7ff"/><path d="M13 80 Q13 60 29 58 Q45 60 45 80 Z" fill="${robe}"/><circle cx="29" cy="68" r="3" fill="${crown}"/><rect x="25" y="54" width="8" height="6" fill="${skin}"/><ellipse cx="29" cy="42" rx="10" ry="12" fill="${skin}"/><path d="M18 38 Q18 26 29 26 Q40 26 40 38 Q39 32 36 30 Q32 28 29 28 Q26 28 22 30 Q19 32 18 38 Z" fill="${hair}"/><path d="M17 32 Q17 22 29 22 Q41 22 41 32 L41 35 L17 35 Z" fill="${robe}" stroke="${robeDark}" stroke-width=".8"/><rect x="16" y="34" width="26" height="2" fill="${crown}"/><path d="M35 24 Q42 16 44 22 Q42 20 40 24 Q42 22 42 26 Z" fill="${isRed?'#dc2626':'#2563eb'}"/><circle cx="25" cy="42" r="1.2" fill="#18181b"/><circle cx="33" cy="42" r="1.2" fill="#18181b"/></svg>`;
+  }
+  return '';
+}
+
+/* ============================================================
+   GAMES
+   ============================================================ */
 const Games = {
   start(id){
     const map = {
