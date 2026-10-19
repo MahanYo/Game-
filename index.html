@@ -11,7 +11,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
 <div id="app">
@@ -54,21 +53,6 @@
 <script>
 // Telegram Mini App bootstrap + light protection
 (function(){
-  try {
-    if (window.Telegram && Telegram.WebApp) {
-      const tg = Telegram.WebApp;
-      tg.ready();
-      tg.expand();
-      tg.disableVerticalSwipes?.();
-      // Match theme
-      const scheme = tg.colorScheme || 'dark';
-      document.documentElement.setAttribute('data-theme', scheme === 'light' ? 'light' : 'dark');
-      if (tg.themeParams?.bg_color) {
-        document.querySelector('meta[name=theme-color]')?.setAttribute('content', tg.themeParams.bg_color);
-      }
-    }
-  } catch(e){}
-
   // Basic anti-theft (not perfect, but raises the bar)
   document.addEventListener('contextmenu', e => e.preventDefault());
   document.addEventListener('keydown', e => {
